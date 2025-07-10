@@ -1,0 +1,49 @@
+# Cloudflare Pages配置文件
+
+name = "echo-nav"
+compatibility_date = "2024-01-01"
+
+[env.production]
+name = "echo-nav"
+
+[env.preview]
+name = "echo-nav-preview"
+
+# Pages配置
+[build]
+command = "pnpm build"
+cwd = "."
+watch_dir = "src"
+
+[build.environment_variables]
+NODE_VERSION = "18"
+PNPM_VERSION = "8"
+
+# 路由配置
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# 安全头配置
+[headers]
+"/*" = [
+  { name = "X-Frame-Options", value = "DENY" },
+  { name = "X-Content-Type-Options", value = "nosniff" },
+  { name = "X-XSS-Protection", value = "1; mode=block" },
+  { name = "Referrer-Policy", value = "strict-origin-when-cross-origin" },
+  { name = "Permissions-Policy", value = "camera=(), microphone=(), geolocation=()" }
+]
+
+# 缓存配置
+"/assets/*" = [
+  { name = "Cache-Control", value = "public, max-age=31536000, immutable" }
+]
+
+"/favicon.ico" = [
+  { name = "Cache-Control", value = "public, max-age=86400" }
+]
+
+"/manifest.json" = [
+  { name = "Cache-Control", value = "public, max-age=86400" }
+]

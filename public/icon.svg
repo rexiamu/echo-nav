@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="256" fill="#3B82F6"/>
+  
+  <!-- 主要图标 - 导航指针 -->
+  <g transform="translate(256, 256)">
+    <!-- 外圈 -->
+    <circle cx="0" cy="0" r="180" fill="none" stroke="white" stroke-width="8" opacity="0.3"/>
+    <circle cx="0" cy="0" r="140" fill="none" stroke="white" stroke-width="6" opacity="0.5"/>
+    
+    <!-- 导航指针 -->
+    <g transform="rotate(-45)">
+      <path d="M0,-120 L30,-90 L0,-60 L-30,-90 Z" fill="white"/>
+      <path d="M0,-60 L20,-40 L0,120 L-20,-40 Z" fill="white" opacity="0.8"/>
+    </g>
+    
+    <!-- 中心点 -->
+    <circle cx="0" cy="0" r="12" fill="white"/>
+    
+    <!-- 装饰性网格点 -->
+    <g opacity="0.4">
+      <circle cx="60" cy="0" r="4" fill="white"/>
+      <circle cx="-60" cy="0" r="4" fill="white"/>
+      <circle cx="0" cy="60" r="4" fill="white"/>
+      <circle cx="0" cy="-60" r="4" fill="white"/>
+      
+      <circle cx="42" cy="42" r="3" fill="white"/>
+      <circle cx="-42" cy="42" r="3" fill="white"/>
+      <circle cx="42" cy="-42" r="3" fill="white"/>
+      <circle cx="-42" cy="-42" r="3" fill="white"/>
+    </g>
+  </g>
+  
+  <!-- 底部文字 -->
+  <text x="256" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">ECHO</text>
+  <text x="256" y="460" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" opacity="0.8">NAV</text>
+</svg>
