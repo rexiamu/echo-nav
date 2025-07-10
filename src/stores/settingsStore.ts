@@ -7,7 +7,7 @@ import type { Theme } from '@/types/ui'
 export interface AppSettings {
   // 主题设置
   theme: Theme
-  
+
   // 布局设置
   layout: {
     cardsPerRow: number
@@ -16,7 +16,7 @@ export interface AppSettings {
     showIcons: boolean
     compactMode: boolean
   }
-  
+
   // 搜索设置
   search: {
     enableFuzzySearch: boolean
@@ -25,14 +25,14 @@ export interface AppSettings {
     maxResults: number
     showSearchHistory: boolean
   }
-  
+
   // 隐私设置
   privacy: {
     showPrivateWebsites: boolean
     requirePasswordForPrivate: boolean
     hideVisitCounts: boolean
   }
-  
+
   // 同步设置
   sync: {
     enableAutoSync: boolean
@@ -40,7 +40,7 @@ export interface AppSettings {
     lastSyncTime?: Date
     githubGistId?: string
   }
-  
+
   // 导入导出设置
   backup: {
     enableAutoBackup: boolean
@@ -48,7 +48,7 @@ export interface AppSettings {
     maxBackups: number
     lastBackupTime?: Date
   }
-  
+
   // 界面设置
   ui: {
     language: 'zh-CN' | 'en-US'
@@ -57,7 +57,7 @@ export interface AppSettings {
     enableSounds: boolean
     showTooltips: boolean
   }
-  
+
   // 高级设置
   advanced: {
     enableDebugMode: boolean
@@ -117,7 +117,10 @@ export const useSettingsStore = defineStore('settings', () => {
   const error = ref<string | null>(null)
 
   // 本地存储
-  const [storedSettings, setStoredSettings] = useLocalStorage(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS)
+  const [storedSettings, setStoredSettings] = useLocalStorage(
+    STORAGE_KEYS.SETTINGS,
+    DEFAULT_SETTINGS
+  )
 
   // 初始化设置
   function initializeSettings() {
@@ -132,21 +135,33 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // 合并设置对象
-  function mergeSettings(defaultSettings: AppSettings, userSettings: Partial<AppSettings>): AppSettings {
-    const merged = { ...defaultSettings }
-    
-    Object.keys(userSettings).forEach(key => {
-      const userValue = userSettings[key as keyof AppSettings]
-      if (userValue && typeof userValue === 'object' && !Array.isArray(userValue)) {
-        merged[key as keyof AppSettings] = {
-          ...defaultSettings[key as keyof AppSettings],
-          ...userValue,
-        } as any
-      } else if (userValue !== undefined) {
-        merged[key as keyof AppSettings] = userValue as any
+  function mergeSettings(base: AppSettings, updates: Partial<AppSettings>): AppSettings {
+    const merged = { ...base }
+
+    for (const key in updates) {
+      const typedKey = key as keyof AppSettings
+      if (Object.prototype.hasOwnProperty.call(updates, typedKey)) {
+        const baseValue = base[typedKey]
+        const updateValue = updates[typedKey]
+
+        if (
+          updateValue &&
+          typeof updateValue === 'object' &&
+          !Array.isArray(updateValue) &&
+          baseValue &&
+          typeof baseValue === 'object' &&
+          !Array.isArray(baseValue)
+        ) {
+          ;(merged[typedKey] as any) = {
+            ...(baseValue as object),
+            ...(updateValue as object),
+          }
+        } else if (updateValue !== undefined) {
+          ;(merged[typedKey] as any) = updateValue
+        }
       }
-    })
-    
+    }
+
     return merged
   }
 
@@ -189,7 +204,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 布局设置
   function updateLayoutSettings(layoutUpdates: Partial<AppSettings['layout']>) {
     updateSettings({
-      layout: { ...settings.value.layout, ...layoutUpdates }
+      layout: { ...settings.value.layout, ...layoutUpdates },
     })
   }
 
@@ -218,7 +233,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 搜索设置
   function updateSearchSettings(searchUpdates: Partial<AppSettings['search']>) {
     updateSettings({
-      search: { ...settings.value.search, ...searchUpdates }
+      search: { ...settings.value.search, ...searchUpdates },
     })
   }
 
@@ -235,7 +250,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 隐私设置
   function updatePrivacySettings(privacyUpdates: Partial<AppSettings['privacy']>) {
     updateSettings({
-      privacy: { ...settings.value.privacy, ...privacyUpdates }
+      privacy: { ...settings.value.privacy, ...privacyUpdates },
     })
   }
 
@@ -244,13 +259,15 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function togglePasswordProtection() {
-    updatePrivacySettings({ requirePasswordForPrivate: !settings.value.privacy.requirePasswordForPrivate })
+    updatePrivacySettings({
+      requirePasswordForPrivate: !settings.value.privacy.requirePasswordForPrivate,
+    })
   }
 
   // 同步设置
   function updateSyncSettings(syncUpdates: Partial<AppSettings['sync']>) {
     updateSettings({
-      sync: { ...settings.value.sync, ...syncUpdates }
+      sync: { ...settings.value.sync, ...syncUpdates },
     })
   }
 
@@ -259,7 +276,8 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function setSyncInterval(minutes: number) {
-    if (minutes >= 5 && minutes <= 1440) { // 5分钟到24小时
+    if (minutes >= 5 && minutes <= 1440) {
+      // 5分钟到24小时
       updateSyncSettings({ syncInterval: minutes })
     }
   }
@@ -271,7 +289,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 备份设置
   function updateBackupSettings(backupUpdates: Partial<AppSettings['backup']>) {
     updateSettings({
-      backup: { ...settings.value.backup, ...backupUpdates }
+      backup: { ...settings.value.backup, ...backupUpdates },
     })
   }
 
@@ -286,7 +304,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // UI设置
   function updateUISettings(uiUpdates: Partial<AppSettings['ui']>) {
     updateSettings({
-      ui: { ...settings.value.ui, ...uiUpdates }
+      ui: { ...settings.value.ui, ...uiUpdates },
     })
   }
 
@@ -309,7 +327,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 高级设置
   function updateAdvancedSettings(advancedUpdates: Partial<AppSettings['advanced']>) {
     updateSettings({
-      advanced: { ...settings.value.advanced, ...advancedUpdates }
+      advanced: { ...settings.value.advanced, ...advancedUpdates },
     })
   }
 
@@ -318,7 +336,9 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function toggleExperimentalFeatures() {
-    updateAdvancedSettings({ enableExperimentalFeatures: !settings.value.advanced.enableExperimentalFeatures })
+    updateAdvancedSettings({
+      enableExperimentalFeatures: !settings.value.advanced.enableExperimentalFeatures,
+    })
   }
 
   function setCustomCSS(css: string) {
@@ -333,7 +353,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function resetSection(section: keyof AppSettings) {
     updateSettings({
-      [section]: DEFAULT_SETTINGS[section]
+      [section]: DEFAULT_SETTINGS[section],
     })
   }
 
@@ -379,10 +399,10 @@ export const useSettingsStore = defineStore('settings', () => {
     initializeSettings,
     updateSettings,
     saveSettings,
-    
+
     // 主题
     setTheme,
-    
+
     // 布局
     updateLayoutSettings,
     setCardsPerRow,
@@ -390,41 +410,41 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleCompactMode,
     toggleDescriptions,
     toggleIcons,
-    
+
     // 搜索
     updateSearchSettings,
     toggleFuzzySearch,
     setMaxResults,
-    
+
     // 隐私
     updatePrivacySettings,
     togglePrivateWebsites,
     togglePasswordProtection,
-    
+
     // 同步
     updateSyncSettings,
     toggleAutoSync,
     setSyncInterval,
     updateLastSyncTime,
-    
+
     // 备份
     updateBackupSettings,
     toggleAutoBackup,
     updateLastBackupTime,
-    
+
     // UI
     updateUISettings,
     setLanguage,
     toggleAnimations,
     toggleSounds,
     toggleTooltips,
-    
+
     // 高级
     updateAdvancedSettings,
     toggleDebugMode,
     toggleExperimentalFeatures,
     setCustomCSS,
-    
+
     // 重置和导入导出
     resetSettings,
     resetSection,

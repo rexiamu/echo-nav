@@ -5,9 +5,11 @@
         <div v-if="isLoading" class="loading-state">
           <div class="loading-spinner">
             <svg class="spinner" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
-                <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/>
-                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite"/>
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-dasharray="32" stroke-dashoffset="32">
+                <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32"
+                  repeatCount="indefinite" />
+                <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite" />
               </circle>
             </svg>
           </div>
@@ -18,7 +20,8 @@
         <div v-else-if="hasError" class="error-state">
           <div class="error-icon">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
             </svg>
           </div>
           <h2 class="error-title">认证失败</h2>
@@ -36,7 +39,8 @@
         <div v-else class="success-state">
           <div class="success-icon">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
             </svg>
           </div>
           <h2 class="success-title">认证成功！</h2>
@@ -79,11 +83,14 @@ const handleCallback = async () => {
     }
 
     // 处理OAuth回调
-    await githubAuth.handleCallback(code, state)
+    const result = await githubAuth.handleCallback(code, state)
+    if (!result.success) {
+      throw new Error(result.message || '处理回调失败')
+    }
 
     // 认证成功
     isLoading.value = false
-    
+
     // 延迟跳转，让用户看到成功信息
     setTimeout(() => {
       router.push('/')
@@ -91,10 +98,10 @@ const handleCallback = async () => {
 
   } catch (error) {
     console.error('GitHub callback handling failed:', error)
-    
+
     isLoading.value = false
     hasError.value = true
-    
+
     if (error instanceof Error) {
       errorMessage.value = error.message
     } else {
@@ -316,11 +323,11 @@ onMounted(() => {
   .callback-content {
     padding: 1.5rem;
   }
-  
+
   .error-actions {
     flex-direction: column;
   }
-  
+
   .retry-btn,
   .back-btn {
     width: 100%;

@@ -50,8 +50,7 @@
                 :class="{ active: selectedIndex === index }" @click="selectResult(index)"
                 @mouseenter="selectedIndex = index">
                 <div class="result-icon">
-                  <img :src="getWebsiteIcon(result.item.url, result.item.name)" :alt="result.item.name"
-                    class="website-icon" @error="handleIconError" />
+                  <WebsiteIcon :website-url="result.item.url" :website-name="result.item.name" />
                 </div>
 
                 <div class="result-content">
@@ -165,8 +164,7 @@
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useSearch } from '@/composables/useSearch'
 import { useSearchShortcuts } from '@/composables/useKeyboard'
-import { getWebsiteIcon } from '@/utils/iconUtils'
-import { generateLetterIcon } from '@/utils/iconUtils'
+import WebsiteIcon from '@/components/ui/WebsiteIcon.vue'
 
 // 搜索功能
 const {
@@ -232,11 +230,6 @@ const handleInput = (event: Event) => {
   setQuery(target.value)
 }
 
-const handleIconError = (event: Event) => {
-  const target = event.target as HTMLImageElement
-  const websiteName = target.alt
-  target.src = generateLetterIcon(websiteName)
-}
 
 const highlightText = (text: string, searchQuery: string): string => {
   if (!searchQuery.trim()) return text

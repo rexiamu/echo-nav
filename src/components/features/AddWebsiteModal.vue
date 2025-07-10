@@ -1,16 +1,6 @@
 <template>
-  <BaseModal
-    v-model="isVisible"
-    title="添加新网站"
-    size="lg"
-    :closable="!isLoading"
-  >
-    <WebsiteForm
-      :is-loading="isLoading"
-      submit-text="添加网站"
-      @submit="handleSubmit"
-      @cancel="handleCancel"
-    />
+  <BaseModal v-model="isVisible" title="添加新网站" size="lg" :closable="!isLoading">
+    <WebsiteForm :is-loading="isLoading" submit-text="添加网站" @submit="handleSubmit" @cancel="handleCancel" />
   </BaseModal>
 </template>
 
@@ -19,7 +9,7 @@ import { ref, computed } from 'vue'
 import { useWebsiteStore } from '@/stores/websiteStore'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import WebsiteForm from './WebsiteForm.vue'
-import type { CreateWebsiteInput } from '@/types/website'
+import type { CreateWebsiteInput, UpdateWebsiteInput } from '@/types/website'
 
 // Props
 interface Props {
@@ -48,15 +38,15 @@ const isVisible = computed({
 })
 
 // 方法
-const handleSubmit = async (data: CreateWebsiteInput) => {
+const handleSubmit = async (data: CreateWebsiteInput | UpdateWebsiteInput) => {
   try {
     isLoading.value = true
-    
-    const website = await websiteStore.createWebsite(data)
-    
+
+    const website = await websiteStore.createWebsite(data as CreateWebsiteInput)
+
     emit('success', website)
     emit('update:modelValue', false)
-    
+
     // 显示成功消息
     console.log('网站添加成功:', website.name)
   } catch (error) {

@@ -1,6 +1,6 @@
 // GitHub Gist API服务
 
-import { githubAuth, type OAuthToken } from './githubAuth'
+import { githubAuth, type GitHubToken } from './githubAuth'
 
 /**
  * Gist文件内容
@@ -66,8 +66,8 @@ export class GistApiService {
     }
 
     return {
-      'Authorization': `${token.token_type} ${token.access_token}`,
-      'Accept': 'application/vnd.github.v3+json',
+      Authorization: `Bearer ${token.access_token}`,
+      Accept: 'application/vnd.github.v3+json',
       'Content-Type': 'application/json',
     }
   }
@@ -79,7 +79,7 @@ export class GistApiService {
     if (!response.ok) {
       const errorText = await response.text()
       let errorMessage = `GitHub API error: ${response.status} ${response.statusText}`
-      
+
       try {
         const errorData = JSON.parse(errorText)
         if (errorData.message) {
@@ -204,15 +204,14 @@ export class GistApiService {
   async searchGists(query: string): Promise<Gist[]> {
     try {
       const gists = await this.getUserGists()
-      
+
       if (!query.trim()) return gists
 
       const lowerQuery = query.toLowerCase()
-      return gists.filter(gist => 
-        gist.description.toLowerCase().includes(lowerQuery) ||
-        Object.keys(gist.files).some(filename => 
-          filename.toLowerCase().includes(lowerQuery)
-        )
+      return gists.filter(
+        gist =>
+          gist.description.toLowerCase().includes(lowerQuery) ||
+          Object.keys(gist.files).some(filename => filename.toLowerCase().includes(lowerQuery))
       )
     } catch (error) {
       console.error('Failed to search gists:', error)
@@ -242,7 +241,7 @@ export class GistApiService {
 
       const fullGist = await this.handleResponse<Gist>(response)
       const fullFile = fullGist.files[filename]
-      
+
       if (!fullFile || !fullFile.content) {
         throw new Error(`Content not available for file ${filename}`)
       }
@@ -260,7 +259,7 @@ export class GistApiService {
   async saveConfig(config: any, gistId?: string): Promise<Gist> {
     const configContent = JSON.stringify(config, null, 2)
     const filename = 'echo-nav-config.json'
-    
+
     const gistData = {
       description: 'Echo Nav - Personal Navigation Configuration',
       public: false,
@@ -287,7 +286,7 @@ export class GistApiService {
     try {
       const gist = await this.getGist(gistId)
       const configFile = gist.files['echo-nav-config.json']
-      
+
       if (!configFile) {
         throw new Error('Configuration file not found in gist')
       }
@@ -306,7 +305,7 @@ export class GistApiService {
   async findConfigGist(): Promise<Gist | null> {
     try {
       const gists = await this.getUserGists()
-      
+
       // 查找包含配置文件的Gist
       for (const gist of gists) {
         if (gist.files['echo-nav-config.json']) {

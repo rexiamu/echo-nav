@@ -2,12 +2,12 @@
 
 import { ref, computed, watch } from 'vue'
 import { useWebsiteStore } from '@/stores/websiteStore'
-import { 
-  searchWebsites, 
-  generateSearchSuggestions, 
-  debounce, 
+import {
+  searchWebsites,
+  generateSearchSuggestions,
+  debounce,
   SearchHistory,
-  type SearchResult 
+  type SearchResult,
 } from '@/utils/searchUtils'
 import type { Website } from '@/types/website'
 
@@ -82,20 +82,24 @@ export function useSearch(options: UseSearchOptions = {}) {
 
     try {
       // 搜索网站
-      const searchResults = searchWebsites(websiteStore.websites, searchQuery, {
-        threshold,
-        maxResults,
-        includeScore: true,
-        includeMatches: true,
-        keys: ['name', 'url', 'description', 'tags'],
-      })
+      const searchResults = searchWebsites(
+        websiteStore.websites.map(w => ({ ...w, tags: [...w.tags] })),
+        searchQuery,
+        {
+          threshold,
+          maxResults,
+          includeScore: true,
+          includeMatches: true,
+          keys: ['name', 'url', 'description', 'tags'],
+        }
+      )
 
       results.value = searchResults
 
       // 生成搜索建议
       if (!hasResults.value) {
         suggestions.value = generateSearchSuggestions(
-          websiteStore.websites,
+          websiteStore.websites.map(w => ({ ...w, tags: [...w.tags] })),
           searchQuery,
           maxSuggestions
         )
@@ -176,13 +180,13 @@ export function useSearch(options: UseSearchOptions = {}) {
     if (index >= 0 && index < results.value.length) {
       const result = results.value[index]
       const website = result.item
-      
+
       // 访问网站
       websiteStore.visitWebsite(website.id)
-      
+
       // 打开网站
       window.open(website.url, '_blank')
-      
+
       // 关闭搜索
       deactivateSearch()
     }
@@ -265,19 +269,19 @@ export function useSearch(options: UseSearchOptions = {}) {
    */
   const getCategorizedResults = () => {
     const categorized = new Map<string, SearchResult[]>()
-    
+
     for (const result of results.value) {
       const website = result.item
-      const categoryName = website.categoryId 
+      const categoryName = website.categoryId
         ? websiteStore.getCategoryById(website.categoryId)?.name || '未分类'
         : '未分类'
-      
+
       if (!categorized.has(categoryName)) {
         categorized.set(categoryName, [])
       }
       categorized.get(categoryName)!.push(result)
     }
-    
+
     return categorized
   }
 
@@ -291,12 +295,12 @@ export function useSearch(options: UseSearchOptions = {}) {
       .sort((a, b) => b.visitCount - a.visitCount)
       .slice(0, 5)
       .map(w => w.name)
-    
+
     return popular
   }
 
   // 监听查询变化
-  watch(query, (newQuery) => {
+  watch(query, newQuery => {
     if (newQuery.trim()) {
       debouncedSearch(newQuery)
     } else {
@@ -318,13 +322,13 @@ export function useSearch(options: UseSearchOptions = {}) {
     isLoading,
     isActive,
     selectedIndex,
-    
+
     // 计算属性
     hasResults,
     hasQuery,
     isEmpty,
     totalResults,
-    
+
     // 方法
     setQuery,
     clearSearch,

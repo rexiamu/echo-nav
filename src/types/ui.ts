@@ -1,7 +1,7 @@
 // UI组件相关的类型定义
 
 export type ButtonSize = 'sm' | 'md' | 'lg'
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost'
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
 export type ButtonState = 'normal' | 'loading' | 'disabled'
 
 export interface ButtonProps {

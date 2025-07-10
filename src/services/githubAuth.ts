@@ -23,59 +23,118 @@ export interface GitHubToken {
 }
 
 /**
- * GitHub认证服务（基于Personal Access Token）
+ * 认证结果
+ */
+export interface AuthResult {
+  success: boolean
+  user?: GitHubUser
+  message?: string
+}
+
+/**
+ * GitHub认证服务（支持PAT和OAuth）
  */
 export class GitHubAuthService {
   private readonly storageKey = 'echo-nav-github-token'
   private readonly userStorageKey = 'echo-nav-github-user'
+  private readonly stateStorageKey = 'echo-nav-oauth-state'
+
+  // OAuth配置 (应从环境变量加载)
+  private readonly clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
+  private readonly clientSecret = import.meta.env.VITE_GITHUB_CLIENT_SECRET
+  private readonly redirectUri = window.location.origin + '/github/callback'
+  private readonly corsProxyUrl = 'https://cors-anywhere.herokuapp.com/' // 用于解决CORS问题
+
+  /**
+   * 启动OAuth认证流程
+   */
+  startOAuth(): void {
+    const state = this.generateState()
+    this.saveState(state)
+
+    const params = new URLSearchParams({
+      client_id: this.clientId,
+      redirect_uri: this.redirectUri,
+      scope: 'gist',
+      state: state,
+    })
+
+    window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`
+  }
+
+  /**
+   * 处理OAuth回调
+   */
+  async handleCallback(code: string, state: string): Promise<AuthResult> {
+    const savedState = this.getState()
+    if (!state || state !== savedState) {
+      return { success: false, message: '无效的state参数，可能存在CSRF攻击' }
+    }
+    this.clearState()
+
+    try {
+      const token = await this.exchangeCodeForToken(code)
+      this.saveToken(token)
+
+      const user = await this.getCurrentUser()
+      if (!user) {
+        return { success: false, message: '获取用户信息失败' }
+      }
+
+      return { success: true, user }
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : '未知错误' }
+    }
+  }
+
+  /**
+   * 使用授权码换取Token
+   */
+  private async exchangeCodeForToken(code: string): Promise<GitHubToken> {
+    const response = await fetch(
+      `${this.corsProxyUrl}https://github.com/login/oauth/access_token`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          code: code,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error('获取GitHub Token失败')
+    }
+
+    const data = await response.json()
+    return { ...data, created_at: Date.now() }
+  }
 
   /**
    * 使用Personal Access Token进行认证
    */
-  async authenticateWithToken(token: string): Promise<GitHubUser> {
-    try {
-      // 验证token格式
-      if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
-        throw new Error('无效的token格式。Personal Access Token应该以 ghp_ 或 github_pat_ 开头。')
-      }
-
-      // 测试token并获取用户信息
-      const response = await fetch('https://api.github.com/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      })
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Token无效或已过期，请检查token是否正确。')
-        } else if (response.status === 403) {
-          throw new Error('Token权限不足，请确保token具有 gist 权限。')
-        } else {
-          throw new Error(`GitHub API错误: ${response.status} ${response.statusText}`)
-        }
-      }
-
-      const userData = await response.json()
-
-      // 创建token信息
-      const tokenInfo: GitHubToken = {
-        access_token: token,
-        token_type: 'Bearer',
-        scope: 'gist',
-        created_at: Date.now(),
-      }
-
-      // 保存token和用户信息
-      this.saveToken(tokenInfo)
-      this.saveUser(userData)
-
-      return userData
-    } catch (error) {
-      console.error('Token authentication failed:', error)
-      throw error
+  async authenticateWithToken(token: string): Promise<AuthResult> {
+    const testResult = await this.testToken(token)
+    if (!testResult.isValid || !testResult.user) {
+      return { success: false, message: testResult.error || 'Token测试失败' }
     }
+
+    const tokenInfo: GitHubToken = {
+      access_token: token,
+      token_type: 'Bearer',
+      scope: 'gist',
+      created_at: Date.now(),
+    }
+
+    this.saveToken(tokenInfo)
+    this.saveUser(testResult.user)
+
+    return { success: true, user: testResult.user }
   }
 
   /**
@@ -205,6 +264,25 @@ export class GitHubAuthService {
    */
   isAuthenticated(): boolean {
     return this.getToken() !== null
+  }
+
+  /**
+   * 生成并保存state
+   */
+  private generateState(): string {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  }
+
+  private saveState(state: string): void {
+    localStorage.setItem(this.stateStorageKey, state)
+  }
+
+  private getState(): string | null {
+    return localStorage.getItem(this.stateStorageKey)
+  }
+
+  private clearState(): void {
+    localStorage.removeItem(this.stateStorageKey)
   }
 
   /**

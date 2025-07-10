@@ -46,25 +46,16 @@
           <div class="token-input-area">
             <div class="input-group">
               <label for="token-input" class="input-label">Personal Access Token:</label>
-              <input
-                id="token-input"
-                v-model="personalToken"
-                type="password"
-                placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                class="token-input"
-                @paste="handleTokenPaste"
-              />
+              <input id="token-input" v-model="personalToken" type="password"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" class="token-input" @paste="handleTokenPaste" />
             </div>
-            
+
             <div class="input-actions">
-              <button 
-                @click="authenticateWithToken" 
-                :disabled="!personalToken.trim() || isAuthenticating"
-                class="auth-button primary"
-              >
+              <button @click="authenticateWithToken" :disabled="!personalToken.trim() || isAuthenticating"
+                class="auth-button primary">
                 {{ isAuthenticating ? '认证中...' : '使用Token认证' }}
               </button>
-              
+
               <button @click="testToken" :disabled="!personalToken.trim()" class="auth-button secondary">
                 测试Token
               </button>
@@ -93,7 +84,7 @@
               <strong>注意：</strong> 此方法可能在某些网络环境下失败（CORS错误）。
               如果失败，请使用上面的Personal Access Token方法。
             </p>
-            
+
             <button @click="startOAuth" class="auth-button secondary">
               尝试OAuth认证
             </button>
@@ -118,7 +109,7 @@
                 <li>在应用中手动输入Gist ID</li>
               </ol>
             </div>
-            
+
             <router-link to="/github-test" class="auth-button secondary">
               查看详细配置指南
             </router-link>
@@ -128,8 +119,8 @@
 
       <div class="auth-help-footer">
         <div class="help-links">
-          <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token" 
-             target="_blank" rel="noopener" class="help-link">
+          <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token"
+            target="_blank" rel="noopener" class="help-link">
             GitHub官方文档 ↗
           </a>
           <router-link to="/" class="help-link">← 返回主页</router-link>
@@ -143,6 +134,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSyncStore } from '@/stores/syncStore'
+import { githubAuth } from '@/services/githubAuth'
 
 // Router和Store
 const router = useRouter()
@@ -163,96 +155,42 @@ const handleTokenPaste = (event: ClipboardEvent) => {
 
 const testToken = async () => {
   if (!personalToken.value.trim()) return
-  
+
   authResult.value = null
-  
-  try {
-    // 验证token格式
-    if (!personalToken.value.startsWith('ghp_') && !personalToken.value.startsWith('github_pat_')) {
-      throw new Error('Token格式错误。应该以 ghp_ 或 github_pat_ 开头。')
-    }
-    
-    // 测试token
-    const response = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${personalToken.value}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    })
-    
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token无效或已过期')
-      } else if (response.status === 403) {
-        throw new Error('Token权限不足，请确保具有gist权限')
-      } else {
-        throw new Error(`API错误: ${response.status}`)
-      }
-    }
-    
-    const userData = await response.json()
-    
+  const result = await githubAuth.testToken(personalToken.value.trim())
+
+  if (result.isValid && result.user) {
     authResult.value = {
       success: true,
-      message: `✅ Token有效！用户: ${userData.name || userData.login}`
+      message: `✅ Token有效！用户: ${result.user.name || result.user.login}`
     }
-    
-  } catch (error) {
+  } else {
     authResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : '测试失败'
+      message: result.error || '测试失败'
     }
   }
 }
 
 const authenticateWithToken = async () => {
   if (!personalToken.value.trim()) return
-  
+
   isAuthenticating.value = true
   authResult.value = null
-  
+
   try {
-    // 先测试token
-    await testToken()
-    
-    if (!authResult.value?.success) {
-      throw new Error('Token验证失败')
-    }
-    
-    // 获取用户信息
-    const response = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${personalToken.value}`,
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    })
-    
-    const userData = await response.json()
-    
-    // 保存认证信息
-    const mockToken = {
-      access_token: personalToken.value,
-      token_type: 'Bearer',
-      scope: 'gist',
-      created_at: Date.now(),
-    }
-    
-    localStorage.setItem('echo-nav-github-token', JSON.stringify(mockToken))
-    localStorage.setItem('echo-nav-github-user', JSON.stringify(userData))
-    
-    // 更新store状态
-    await syncStore.initAuth()
-    
+    const result = await syncStore.loginWithToken(personalToken.value.trim())
+
     authResult.value = {
       success: true,
-      message: `🎉 认证成功！欢迎，${userData.name || userData.login}！`
+      message: `🎉 认证成功！欢迎，${syncStore.user?.name || syncStore.user?.login}！`
     }
-    
+
     // 延迟跳转
     setTimeout(() => {
       router.push('/')
     }, 2000)
-    
+
   } catch (error) {
     authResult.value = {
       success: false,
@@ -264,14 +202,7 @@ const authenticateWithToken = async () => {
 }
 
 const startOAuth = () => {
-  try {
-    // 跳转到主页并触发OAuth
-    router.push('/')
-    // 这里可以添加触发OAuth的逻辑
-    alert('请在主页点击GitHub同步按钮进行OAuth认证')
-  } catch (error) {
-    alert('OAuth启动失败，请使用Personal Access Token方法')
-  }
+  githubAuth.startOAuth()
 }
 </script>
 
@@ -615,15 +546,15 @@ const startOAuth = () => {
   .auth-help-view {
     padding: 1rem 0.5rem;
   }
-  
+
   .auth-method {
     padding: 1.5rem;
   }
-  
+
   .input-actions {
     flex-direction: column;
   }
-  
+
   .help-links {
     flex-direction: column;
     gap: 1rem;

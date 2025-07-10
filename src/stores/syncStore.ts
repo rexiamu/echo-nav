@@ -150,7 +150,10 @@ export const useSyncStore = defineStore('sync', () => {
       status.value = SyncStatus.SYNCING
       syncMessage.value = '正在验证GitHub Token...'
 
-      const userData = await githubAuth.authenticateWithToken(token)
+      const authResult = await githubAuth.authenticateWithToken(token)
+      if (!authResult.success || !authResult.user) {
+        throw new Error(authResult.message || '使用Token认证失败')
+      }
 
       // 认证成功后初始化
       await initAuth()
@@ -160,7 +163,7 @@ export const useSyncStore = defineStore('sync', () => {
 
       addSyncHistory(
         SyncStatus.SUCCESS,
-        `GitHub认证成功 - 用户: ${userData.name || userData.login}`
+        `GitHub认证成功 - 用户: ${authResult.user.name || authResult.user.login}`
       )
     } catch (error) {
       status.value = SyncStatus.ERROR
@@ -198,12 +201,16 @@ export const useSyncStore = defineStore('sync', () => {
       syncMessage.value = '正在上传配置...'
 
       // 创建同步配置
-      const config = createSyncConfig(websiteStore.websites, websiteStore.categories, {
-        theme: 'system', // 从设置store获取
-        cardSize: 'md',
-        showDescriptions: true,
-        showCategories: true,
-      })
+      const config = createSyncConfig(
+        websiteStore.websites.map(w => ({ ...w, tags: [...w.tags] })),
+        websiteStore.categories.map(c => ({ ...c })),
+        {
+          theme: 'system', // 从设置store获取
+          cardSize: 'md',
+          showDescriptions: true,
+          showCategories: true,
+        }
+      )
 
       // 上传或更新Gist
       const gist = await gistApi.saveConfig(config, configGist.value?.id)
@@ -251,12 +258,16 @@ export const useSyncStore = defineStore('sync', () => {
       }
 
       // 创建当前配置
-      const localConfig = createSyncConfig(websiteStore.websites, websiteStore.categories, {
-        theme: 'system',
-        cardSize: 'md',
-        showDescriptions: true,
-        showCategories: true,
-      })
+      const localConfig = createSyncConfig(
+        websiteStore.websites.map(w => ({ ...w, tags: [...w.tags] })),
+        websiteStore.categories.map(c => ({ ...c })),
+        {
+          theme: 'system',
+          cardSize: 'md',
+          showDescriptions: true,
+          showCategories: true,
+        }
+      )
 
       // 检测冲突
       const conflict = detectSyncConflict(localConfig, remoteConfig)

@@ -374,6 +374,18 @@ export const useWebsiteStore = defineStore('website', () => {
     saveToStorage()
   }
 
+  // 批量替换
+  async function replaceWebsites(newWebsites: Website[]): Promise<void> {
+    websites.value = newWebsites
+    updateTagsFromWebsites()
+    saveToStorage()
+  }
+
+  async function replaceCategories(newCategories: Category[]): Promise<void> {
+    categories.value = newCategories
+    saveToStorage()
+  }
+
   return {
     // 状态
     websites: readonly(websites),
@@ -405,5 +417,7 @@ export const useWebsiteStore = defineStore('website', () => {
     exportData,
     importData,
     clearAllData,
+    replaceWebsites,
+    replaceCategories,
   }
 })
