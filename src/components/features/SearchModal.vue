@@ -354,7 +354,6 @@ defineExpose({
   background: transparent;
   font-size: 1.125rem;
   color: rgb(17 24 39);
-  placeholder-color: rgb(156 163 175);
 }
 
 .dark .search-input {
